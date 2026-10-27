@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html{color-scheme:light}body{margin:0}</style>
+<title>QARZ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: one mobile column (max 560px): brand header, net balance + two totals, searchable people list, fixed bottom action bar. Forms open as bottom sheets. */
+:root{
+  --bg:#E9EFF4; --surface:#DFE7EE; --line:#CCD6E1; --fg:#1B2B44; --muted:#5B6B82;
+  --accent:#2A7B5E; --accent-btn:#6CBF9C; --accent-soft:#D9EDE3; --on-accent:#0F2A22;
+  --out-bar:#E3A099; --neg:#B04A41; --neg-btn:#C0544A; --neg-soft:#F3DEDB; --on-neg:#FFFFFF; --scrim:rgba(27,43,68,.30);
+  --font:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; color-scheme:light;
+}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:400 15px/1.45 var(--font);
+  padding-block:12px 104px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:560px;margin:0 auto}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3,p{margin:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0 14px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;letter-spacing:.06em}
+.logo{width:30px;height:30px;border-radius:8px;background:var(--accent-btn);color:var(--on-accent);display:grid;place-items:center;font-weight:700;font-size:16px}
+.acts{display:flex;gap:6px}
+
+.btn{border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:10px 14px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;min-height:44px}
+.btn.sm{min-height:36px;padding:6px 11px;font-size:13px}
+.btn.pri{background:var(--accent-btn);color:var(--on-accent);border-color:transparent}
+.btn.dng{background:var(--neg-btn);color:var(--on-neg);border-color:transparent}
+.btn.warn{color:var(--neg)}
+.btn.block{width:100%}
+.btn:disabled{opacity:.5}
+
+.net{background:var(--surface);border-radius:14px;padding:16px;margin-bottom:10px}
+.lbl{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.big{font-size:32px;font-weight:700;letter-spacing:-.02em;line-height:1.15;margin-top:4px;overflow-wrap:anywhere}
+.hint{color:var(--muted);font-size:13px;margin-top:2px}
+.pos{color:var(--accent)} .neg{color:var(--neg)} .zero{color:var(--muted)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
+.tile b{display:block;font-size:18px;font-weight:700;margin-top:4px;overflow-wrap:anywhere}
+
+.banner{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--accent-soft);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:13px}
+.banner span{min-width:0}
+
+.tools{margin:18px 0 6px;display:flex;flex-direction:column;gap:10px}
+.search{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:11px 12px;font-size:16px}
+.tabb{border:1px solid var(--line);border-radius:10px;padding:10px 8px;background:var(--bg);font-weight:700;font-size:14px;cursor:pointer;min-height:44px}
+.tabb.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:99px;padding:6px 14px;font-weight:600;font-size:13px;cursor:pointer;min-height:34px}
+.chip.on{background:var(--fg);color:var(--bg);border-color:transparent}
+
+.row{display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--line)}
+.rowmain{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left;background:none;border:0;padding:13px 0;cursor:pointer}
+.rowdel{flex:none;border:0;background:none;color:var(--neg);font-weight:700;font-size:13px;padding:10px 6px;cursor:pointer;min-height:44px}
+.avatar{flex:none;width:40px;height:40px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700}
+.rmain{flex:1;min-width:0}
+.rname{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rsub{color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ramt{font-weight:700;white-space:nowrap}
+.empty{padding:28px 0;color:var(--muted);text-align:center}
+.empty .btn{margin-top:12px}
+
+.back{border:0;background:none;color:var(--accent);font-weight:700;padding:6px 0;cursor:pointer;min-height:36px}
+.ph{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px}
+.ph h1{font-size:24px;font-weight:700;letter-spacing:-.01em;overflow-wrap:anywhere}
+.pbtns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.sec{display:flex;align-items:center;justify-content:space-between;margin:18px 0 8px}
+.sec h2{font-size:16px;font-weight:700}
+
+.debt{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
+.dtop{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dtop .date{margin-left:auto;color:var(--muted);font-size:13px}
+.pill{font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 9px;border-radius:99px}
+.pill.g{background:var(--accent-soft);color:var(--accent)}
+.pill.r{background:var(--neg-soft);color:var(--neg)}
+.pill.m{background:var(--surface);color:var(--muted)}
+.dnums{display:flex;justify-content:space-between;gap:10px;margin:10px 0 8px}
+.dnums b{display:block;font-size:17px;font-weight:700}
+.dnums div:last-child{text-align:right}
+.prog{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.prog i{display:block;height:100%;background:var(--accent-btn);border-radius:3px;transform-origin:left}
+.dnote{margin-top:8px;color:var(--muted);font-size:14px;overflow-wrap:anywhere}
+.pays{list-style:none;margin:10px 0 0;padding:0;border-top:1px solid var(--line)}
+.pays li{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;flex-wrap:wrap}
+.pays .pa{font-weight:700}
+.pays .pn{color:var(--muted);flex:1;min-width:80px;overflow-wrap:anywhere}
+.pays .pb{margin-left:auto;display:flex;gap:4px}
+.link{border:0;background:none;color:var(--muted);font-weight:700;font-size:13px;padding:6px 8px;cursor:pointer;min-height:32px;text-decoration:underline}
+.dact{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);z-index:20;
+  padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar .in{max-width:560px;margin:0 auto;display:flex;gap:8px}
+.bar .pri{flex:1}
+
+.ov{position:fixed;inset:0;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+.ov.top2{z-index:60;align-items:center}
+.sheet{background:var(--bg);width:100%;max-width:560px;max-height:92%;overflow:auto;border-radius:18px 18px 0 0;
+  padding-top:16px;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.ov.top2 .sheet{width:calc(100% - 32px);border-radius:16px;padding:18px}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sh h2{font-size:18px;font-weight:700}
+.x{border:0;background:var(--surface);width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:15px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.sheet p{color:var(--muted)}
+
+.f{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.f label,.f .lbl{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:0;text-transform:none}
+.f input,.f select,.f textarea{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:12px;font-size:16px}
+.f input[type=date]{display:block;min-width:0;max-width:100%;min-height:48px;-webkit-appearance:none;appearance:none;text-align:left}
+.f input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
+.f textarea{min-height:120px;resize:vertical;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.f [aria-invalid="true"]{border-color:var(--neg)}
+.err{color:var(--neg);font-size:13px;min-height:0}
+.seg{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{border:1px solid var(--line);border-radius:10px;padding:11px 8px;text-align:center;font-weight:700;font-size:14px;color:var(--fg);cursor:pointer}
+.seg input:checked+label{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.seg input:focus-visible+label{outline:2px solid var(--accent)}
+.quick{align-self:flex-start}
+.hr{height:1px;background:var(--line);margin:18px 0}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;z-index:90;max-width:calc(100% - 32px);text-align:center}
+.intro{position:fixed;inset:0;z-index:100;border:0;color:var(--fg);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;text-align:center;
+  padding:32px max(24px,env(safe-area-inset-right,0px)) 32px max(24px,env(safe-area-inset-left,0px));
+  background:radial-gradient(70% 45% at 50% 40%,var(--accent-soft),var(--bg));transition:opacity .6s ease,transform .6s cubic-bezier(.2,.7,.2,1)}
+.ch{display:inline-block}
+.w{display:inline-block;white-space:nowrap}
+.intro.out{pointer-events:none;animation:fadeout 1s ease .25s forwards}
+.intro.out .i-brand,.intro.out .i-line,.intro.out .i-hint,.intro.out .i-credit{animation:outtext .5s ease forwards}
+@keyframes outtext{to{opacity:0;transform:translateY(-12px) scale(.97);filter:blur(4px)}}
+@keyframes letter{from{opacity:0;transform:translateY(10px);filter:blur(6px)}to{opacity:1;transform:none;filter:blur(0)}}
+@keyframes fadeout{to{opacity:0}}
+.money{position:fixed;inset:0;z-index:110;pointer-events:none;overflow:hidden}
+.bill,.coin{position:absolute;left:0;top:0;will-change:transform,opacity;opacity:0}
+.bill{width:58px;height:30px;border-radius:5px;background:linear-gradient(135deg,#CBE9D8,#98D2B5);border:1px solid rgba(42,123,94,.35);box-shadow:0 4px 12px rgba(27,43,68,.12)}
+.bill::before{content:"";position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;border:1.5px solid rgba(42,123,94,.45)}
+.bill::after{content:"";position:absolute;inset:4px;border:1px dashed rgba(42,123,94,.3);border-radius:3px}
+.coin{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#F6EDC6,#DCC77F);border:1px solid rgba(150,125,40,.4);box-shadow:0 3px 8px rgba(27,43,68,.12)}
+.coin::after{content:"";position:absolute;inset:4px;border-radius:50%;border:1px solid rgba(150,125,40,.35)}
+.i-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:.14em;color:var(--muted)}
+.i-line{font-size:clamp(28px,8vw,40px);font-weight:700;letter-spacing:-.02em;line-height:1.15;max-width:14ch;text-wrap:balance}
+.i-hint{font-size:14px;color:var(--muted)}
+body.intro-on .bar{display:none}
+.btn,.chip,.tabb,.rowmain{transition:transform .15s ease,background-color .2s ease,border-color .2s ease,color .2s ease}
+.btn:active,.chip:active,.tabb:active{transform:scale(.97)}
+.rowmain:active{opacity:.7}
+.prog i{transition:width .5s ease}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes up{from{transform:translateY(32px);opacity:0}to{transform:none;opacity:1}}
+@keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
+@media (prefers-reduced-motion:no-preference){
+  .i-brand{animation:rise .9s cubic-bezier(.2,.7,.2,1) both}
+  .ch{animation:letter .8s cubic-bezier(.2,.7,.2,1) both}
+  .i-hint{opacity:0;animation:rise .9s var(--hd,2.4s) cubic-bezier(.2,.7,.2,1) both,pulse 2.8s calc(var(--hd,2.4s) + .9s) ease-in-out infinite}
+  .anim .top,.anim .banner,.anim .net,.anim .tile,.anim .tools,.anim .row,.anim .debt,.anim .ph,.anim .pbtns,.anim .back,.anim .sec{animation:rise .55s cubic-bezier(.2,.7,.2,1) both}
+  .anim .net{animation-delay:.05s}.anim .tile:nth-child(1){animation-delay:.12s}.anim .tile:nth-child(2){animation-delay:.18s}.anim .tools{animation-delay:.22s}
+  .anim .row:nth-child(1),.anim .debt:nth-child(1){animation-delay:.28s}.anim .row:nth-child(2),.anim .debt:nth-child(2){animation-delay:.34s}
+  .anim .row:nth-child(3),.anim .debt:nth-child(3){animation-delay:.4s}.anim .row:nth-child(n+4),.anim .debt:nth-child(n+4){animation-delay:.46s}
+  .anim .prog i{animation:grow .8s .35s cubic-bezier(.2,.7,.2,1) both}
+  .ov{animation:fadein .22s ease both}
+  .sheet{animation:up .32s cubic-bezier(.2,.7,.2,1) both}
+  #toast{animation:rise .3s ease both}
+}
+@media (prefers-reduced-motion:reduce){.intro{transition:none}.intro.out{animation:fadeout .4s forwards}.intro.out span{animation:none}.i-hint{opacity:1}}
+.seg.t3{grid-template-columns:repeat(3,1fr)}
+.tabb{font-size:13px;padding:10px 4px}
+.credit{text-align:center;color:var(--muted);font-size:12px;letter-spacing:.05em;margin-top:26px}
+.i-credit{position:absolute;left:0;right:0;bottom:calc(22px + env(safe-area-inset-bottom,0px));font-size:12px;letter-spacing:.06em;color:var(--muted)}
+.chart{display:flex;align-items:flex-end;gap:5px;height:130px;margin-top:16px;border-bottom:1px solid var(--line)}
+.sc{flex:1;min-width:0;height:100%;display:flex;align-items:flex-end;justify-content:center;gap:2px}
+.sb{display:block;flex:1;max-width:12px;border-radius:3px 3px 0 0;transform-origin:bottom}
+.sb.i{background:var(--accent-btn)}.sb.o{background:var(--out-bar)}
+.clabels{display:flex;gap:5px;margin-top:6px}
+.clabels span{flex:1;min-width:0;text-align:center;font-size:10.5px;color:var(--muted);overflow:hidden}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:12px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.srow{padding:12px 0;border-bottom:1px solid var(--line)}
+.srow .l1{display:flex;justify-content:space-between;gap:10px;font-weight:700}
+.srow .l2{color:var(--muted);font-size:13px;margin-top:2px}
+@keyframes growy{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@media (prefers-reduced-motion:no-preference){.sb{animation:growy .8s cubic-bezier(.2,.7,.2,1) both}.i-credit{animation:fadein 1s var(--hd,2.4s) both}}
+</style>
+
+<button class="intro" id="intro" type="button" aria-label="QARZ. Davom etish uchun bosing">
+  <span class="i-brand"><span class="logo">Q</span>QARZ</span>
+  <span class="i-line">Qarz oqibatni buzadi.</span>
+  <span class="i-hint">Davom etish uchun bosing</span>
+  <span class="i-credit">by Rakhmanov Abdulaziz</span>
+</button>
+<div class="wrap" id="app"></div>
+<div class="bar"><div class="in">
+  <button class="btn pri" data-act="add-debt" type="button">+ Qarz qo‘shish</button>
+</div></div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+document.documentElement.lang='uz';
+var KEY='qarzim-bor-v1', MAX=999999999999, DATE=/^\d{4}-\d{2}-\d{2}$/;
+var db={people:[],debts:[],pays:[]};
+var view={name:'home'}, q='', hf='all', pf='all', tab='debts', sp='month';
+var sheetEl=null, askEl=null;
+
+/* ---------- helpers ---------- */
+var $=function(s,r){return (r||document).querySelector(s)};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var grp=function(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ')};
+var fmt=function(n){return grp(Math.round(Math.abs(n)))+' so‘m'};
+var sgn=function(n){return (n>0?'+':n<0?'−':'')+fmt(n)};
+var fmtT=function(n){return fmt(n).replace(/ /g,' ')};
+var sgnT=function(n){return sgn(n).replace(/ /g,' ')};
+var uid=function(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)};
+var today=function(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+var fmtD=function(s){return s.slice(8,10)+'.'+s.slice(5,7)+'.'+s.slice(0,4)};
+var validDate=function(s){return DATE.test(s)&&!isNaN(Date.parse(s))};
+var tt;
+function toast(m){var t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(function(){t.hidden=true},2800)}
+
+/* ---------- data ---------- */
+function clean(o){
+  if(!o||typeof o!=='object'||!Array.isArray(o.people)||!Array.isArray(o.debts)) throw new Error('format');
+  var S=function(v,n){return String(v==null?'':v).trim().slice(0,n)};
+  var out={people:[],debts:[],pays:[]}, pid={}, did={}, paidSum={};
+  o.people.forEach(function(p){
+    var n=S(p&&p.name,60), i=S(p&&p.id,40);
+    if(!n||!i||pid[i])return; pid[i]=1;
+    out.people.push({id:i,name:n,note:S(p.note,140),sample:!!p.sample});
+  });
+  o.debts.forEach(function(d){
+    if(!d)return; var i=S(d.id,40), a=Number(d.amount), p=S(d.pid,40);
+    if(!i||did[i]||!pid[p]||(d.dir!=='iowe'&&d.dir!=='theyowe')||!Number.isInteger(a)||a<1||a>MAX||!validDate(String(d.date)))return;
+    did[i]=a; paidSum[i]=0;
+    out.debts.push({id:i,pid:p,dir:d.dir,amount:a,date:String(d.date),note:S(d.note,140),t:Number(d.t)||0,sample:!!d.sample});
+  });
+  (Array.isArray(o.pays)?o.pays:[]).forEach(function(p){
+    if(!p)return; var i=S(p.id,40), a=Number(p.amount), dd=S(p.debtId,40);
+    if(!i||!did[dd]||!Number.isInteger(a)||a<1||!validDate(String(p.date)))return;
+    if(paidSum[dd]+a>did[dd])return; paidSum[dd]+=a;
+    out.pays.push({id:i,debtId:dd,amount:a,date:String(p.date),note:S(p.note,140),auto:!!p.auto,t:Number(p.t)||0,sample:!!p.sample});
+  });
+  return out;
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){toast('Brauzer xotirasi ishlamadi. Zaxira nusxa oling.')}}
+function seed(){
+  var t=Date.now();
+  db={people:[
+    {id:'s1',name:'Sardor (do‘st)',note:'Mashina ta’miri uchun',sample:true},
+    {id:'s2',name:'Dilnoza opa',note:'',sample:true},
+    {id:'s3',name:'Jasur (hamkasb)',note:'Tushlik va taksi',sample:true}],
+   debts:[
+    {id:'sd1',pid:'s1',dir:'theyowe',amount:1500000,date:'2026-10-05',note:'Ta’mir uchun qarz berdim',t:t,sample:true},
+    {id:'sd2',pid:'s2',dir:'iowe',amount:800000,date:'2026-10-10',note:'Oylik kelguncha olgan edim',t:t+1,sample:true},
+    {id:'sd3',pid:'s3',dir:'theyowe',amount:300000,date:'2026-09-20',note:'',t:t+2,sample:true}],
+   pays:[
+    {id:'sp1',debtId:'sd1',amount:500000,date:'2026-10-15',note:'Naqd',auto:false,t:t+3,sample:true},
+    {id:'sp2',debtId:'sd3',amount:300000,date:'2026-10-01',note:'To‘liq qaytardi',auto:false,t:t+4,sample:true}]};
+}
+function load(){
+  var raw=null;
+  try{raw=localStorage.getItem(KEY)}catch(e){}
+  if(raw===null){seed();save();return}
+  try{db=clean(JSON.parse(raw))}catch(e){db={people:[],debts:[],pays:[]}}
+}
+
+/* ---------- calculations ---------- */
+function paid(d){var s=0;db.pays.forEach(function(p){if(p.debtId===d.id)s+=p.amount});return s}
+function rem(d){return Math.max(0,d.amount-paid(d))}
+function totals(){var io=0,to=0;db.debts.forEach(function(d){var r=rem(d);if(d.dir==='iowe')io+=r;else to+=r});return{io:io,to:to,net:to-io}}
+function stats(pid){
+  var io=0,to=0,act=0,n=0;
+  db.debts.forEach(function(d){if(d.pid!==pid)return;n++;var r=rem(d);if(r>0){act++;if(d.dir==='iowe')io+=r;else to+=r}});
+  return{io:io,to:to,net:to-io,act:act,n:n};
+}
+var person=function(id){return db.people.filter(function(p){return p.id===id})[0]};
+var debtById=function(id){return db.debts.filter(function(d){return d.id===id})[0]};
+var payById=function(id){return db.pays.filter(function(d){return d.id===id})[0]};
+var cls=function(n){return n>0?'pos':n<0?'neg':'zero'};
+
+/* ---------- rendering ---------- */
+function debtRowsHTML(){
+  var needle=q.trim().toLowerCase();
+  var list=db.debts.filter(function(d){
+    var p=person(d.pid);if(!p)return false;
+    if(needle&&(p.name+' '+p.note+' '+d.note).toLowerCase().indexOf(needle)<0)return false;
+    var r=rem(d);
+    if(hf==='active')return r>0;
+    if(hf==='settled')return r===0;
+    return true;
+  }).sort(function(a,b){return (rem(b)>0)-(rem(a)>0)||b.date.localeCompare(a.date)||b.t-a.t});
+  if(!db.debts.length)return '<div class="empty"><p>Hali qarz yozilmagan.</p><button class="btn pri" data-act="add-debt" type="button">+ Qarz qo‘shish</button></div>';
+  if(!list.length)return '<div class="empty">Hech narsa topilmadi.</div>';
+  return list.map(function(d){
+    var p=person(d.pid),r=rem(d),sub=(d.dir==='iowe'?'Men qarzdorman':'Menga qarzdor')+' · '+fmtD(d.date)+(d.note?' · '+d.note:'');
+    return '<div class="row"><button class="rowmain" type="button" data-act="open" data-id="'+esc(p.id)+'"><span class="avatar">'+esc(Array.from(p.name)[0].toUpperCase())+'</span>'+
+      '<span class="rmain"><div class="rname">'+esc(p.name)+'</div><div class="rsub">'+esc(sub)+'</div></span>'+
+      '<span class="ramt num '+(r>0?(d.dir==='iowe'?'neg':'pos'):'zero')+'">'+(r>0?fmt(r):'Yopilgan')+'</span></button></div>';
+  }).join('');
+}
+function peopleListHTML(){return tab==='stats'?statsHTML():tab==='debts'?debtRowsHTML():peopleRowsHTML()}
+var MN=['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'];
+var MS=['Yan','Fev','Mar','Apr','May','Iyun','Iyul','Avg','Sen','Okt','Noy','Dek'];
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function flows(){
+  var ev=[];
+  db.debts.forEach(function(d){ev.push({date:d.date,k:d.dir==='iowe'?'in':'out',a:d.amount})});
+  db.pays.forEach(function(p){var d=debtById(p.debtId);if(d)ev.push({date:p.date,k:d.dir==='iowe'?'out':'in',a:p.amount})});
+  return ev;
+}
+function periods(){
+  var out=[],now=new Date(),i,d,k,y;
+  if(sp==='day'){for(i=13;i>=0;i--){d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);k=ymd(d);out.push({k:k,short:k.slice(8),full:fmtD(k)})}}
+  else if(sp==='month'){for(i=11;i>=0;i--){d=new Date(now.getFullYear(),now.getMonth()-i,1);k=ymd(d).slice(0,7);out.push({k:k,short:MS[d.getMonth()],full:MN[d.getMonth()]+' '+d.getFullYear()})}}
+  else{for(i=4;i>=0;i--){y=now.getFullYear()-i;out.push({k:String(y),short:String(y),full:String(y)})}}
+  return out;
+}
+function statsHTML(){
+  var len=sp==='day'?10:sp==='month'?7:4, map={};
+  flows().forEach(function(e){var k=e.date.slice(0,len),m=map[k]||(map[k]={i:0,o:0});if(e.k==='in')m.i+=e.a;else m.o+=e.a});
+  var ps=periods().map(function(p){var m=map[p.k]||{i:0,o:0};p.i=m.i;p.o=m.o;return p});
+  var cur=ps[ps.length-1], max=0;
+  ps.forEach(function(p){max=Math.max(max,p.i,p.o)});
+  var curName=sp==='day'?'Bugun':sp==='month'?'Shu oy':'Shu yil', net=cur.i-cur.o;
+  var bars=ps.map(function(p){
+    return '<div class="sc" title="'+esc(p.full)+'"><i class="sb i" style="height:'+(max?Math.max(p.i?2:0,p.i/max*100):0)+'%"></i><i class="sb o" style="height:'+(max?Math.max(p.o?2:0,p.o/max*100):0)+'%"></i></div>';
+  }).join('');
+  var labels=ps.map(function(p){return '<span>'+esc(p.short)+'</span>'}).join('');
+  var rows=ps.slice().reverse().filter(function(p){return p.i||p.o}).map(function(p){
+    var n=p.i-p.o;
+    return '<div class="srow"><div class="l1"><span>'+esc(p.full)+'</span><span class="num '+cls(n)+'">'+sgn(n)+'</span></div><div class="l2 num">Kirim '+fmt(p.i)+' · Chiqim '+fmt(p.o)+'</div></div>';
+  }).join('');
+  return '<section class="net" style="margin-top:12px"><div class="lbl">'+curName+' farqi</div><div class="big num '+cls(net)+'" data-n="'+net+'" data-s="1">'+sgn(net)+'</div><div class="hint">Kirim minus chiqim</div></section>'+
+    '<div class="tiles"><div class="tile"><div class="lbl">Kirim</div><b class="num pos" data-n="'+cur.i+'">'+fmt(cur.i)+'</b></div><div class="tile"><div class="lbl">Chiqim</div><b class="num neg" data-n="'+cur.o+'">'+fmt(cur.o)+'</b></div></div>'+
+    (max?'<div class="chart" role="img" aria-label="Kirim va chiqim diagrammasi">'+bars+'</div><div class="clabels">'+labels+'</div>'
+        :'<div class="empty">Bu davrda harakat yo‘q.</div>')+
+    '<div class="legend"><span><i style="background:var(--accent-btn)"></i>Kirim</span><span><i style="background:var(--out-bar)"></i>Chiqim</span></div>'+
+    '<p class="hint" style="margin-top:10px">Kirim: sizga kelgan pul (olgan qarz, qaytgan to‘lov). Chiqim: sizdan chiqqan pul (bergan qarz, qaytargan to‘lov).</p>'+
+    (rows?'<div class="sec"><h2>Davrlar bo‘yicha</h2></div>'+rows:'');
+}
+function periodChips(){
+  return [['day','Kunlik'],['month','Oylik'],['year','Yillik']].map(function(c){
+    return '<button class="chip'+(sp===c[0]?' on':'')+'" type="button" data-act="sp" data-v="'+c[0]+'" aria-pressed="'+(sp===c[0])+'">'+c[1]+'</button>';
+  }).join('');
+}
+function peopleRowsHTML(){
+  var needle=q.trim().toLowerCase();
+  var list=db.people.filter(function(p){
+    if(needle&&(p.name+' '+p.note).toLowerCase().indexOf(needle)<0)return false;
+    var s=stats(p.id);
+    if(hf==='active')return s.act>0;
+    if(hf==='settled')return s.act===0;
+    return true;
+  }).map(function(p){return{p:p,s:stats(p.id)}}).sort(function(a,b){
+    return (b.s.act>0)-(a.s.act>0)||Math.abs(b.s.net)-Math.abs(a.s.net)||a.p.name.localeCompare(b.p.name);
+  });
+  if(!db.people.length)return '<div class="empty"><p>Hali hech kim qo‘shilmagan.<br>Birinchi qarzni yozing.</p><button class="btn pri" data-act="add-debt" type="button">+ Qarz qo‘shish</button></div>';
+  if(!list.length)return '<div class="empty">Hech narsa topilmadi.</div>';
+  return list.map(function(x){
+    var p=x.p,s=x.s,sub;
+    if(s.n===0)sub='Hali qarz yo‘q';else if(s.act===0)sub='Hisob yopilgan';else if(s.net>0)sub='Sizga qarzdor';else if(s.net<0)sub='Siz qarzdorsiz';else sub='Qarzlar teng';
+    if(p.note)sub+=' · '+p.note;
+    return '<div class="row"><button class="rowmain" type="button" data-act="open" data-id="'+esc(p.id)+'"><span class="avatar">'+esc(Array.from(p.name)[0].toUpperCase())+'</span>'+
+      '<span class="rmain"><div class="rname">'+esc(p.name)+'</div><div class="rsub">'+esc(sub)+'</div></span>'+
+      '<span class="ramt num '+cls(s.net)+'">'+fmt(s.net)+'</span></button><button class="rowdel" type="button" data-act="del-person" data-id="'+esc(p.id)+'" aria-label="'+esc(p.name)+' ni o‘chirish">O‘chirish</button></div>';
+  }).join('');
+}
+function chips(cur,act){
+  return [['all','Hammasi'],['active','Faol'],['settled','Yopilgan']].map(function(c){
+    return '<button class="chip'+(cur===c[0]?' on':'')+'" type="button" data-act="'+act+'" data-v="'+c[0]+'" aria-pressed="'+(cur===c[0])+'">'+c[1]+'</button>';
+  }).join('');
+}
+function homeHTML(){
+  var t=totals(), hasSample=db.people.some(function(p){return p.sample});
+  return '<header class="top"><div class="brand"><span class="logo">Q</span>QARZ</div><div class="acts">'+
+    '<button class="btn sm" type="button" data-act="share-all">Ulashish</button></div></header>'+
+    (hasSample?'<div class="banner"><span>Bu namuna ma‘lumotlar. O‘zingiznikini kiritishdan oldin tozalang.</span><button class="btn sm" type="button" data-act="clear-sample">Tozalash</button></div>':'')+
+    '<section class="net" aria-label="Sof balans"><div class="lbl">Sof balans</div><div class="big num '+cls(t.net)+'" data-n="'+t.net+'" data-s="1">'+sgn(t.net)+'</div>'+
+    '<div class="hint">'+(t.net>0?'Boshqalar sizga ko‘proq qarzdor':t.net<0?'Siz ko‘proq qarzdorsiz':'Hisob teng')+'</div></section>'+
+    '<div class="tiles"><div class="tile"><div class="lbl">Men qarzdorman</div><b class="num neg" data-n="'+t.io+'">'+fmt(t.io)+'</b></div>'+
+    '<div class="tile"><div class="lbl">Menga qarzdor</div><b class="num pos" data-n="'+t.to+'">'+fmt(t.to)+'</b></div></div>'+
+    '<div class="tools"><div class="seg t3" role="tablist"><button class="tabb'+(tab==='debts'?' on':'')+'" type="button" data-act="tab" data-v="debts">Qarzlar</button><button class="tabb'+(tab==='people'?' on':'')+'" type="button" data-act="tab" data-v="people">Shaxslar</button><button class="tabb'+(tab==='stats'?' on':'')+'" type="button" data-act="tab" data-v="stats">Statistika</button></div>'+
+    (tab==='stats'?'<div class="chips">'+periodChips()+'</div>':'<div class="chips">'+chips(hf,'hf')+'</div>')+'</div>'+
+    '<div id="list">'+peopleListHTML()+'</div><div style="text-align:center;margin-top:20px;display:flex;flex-direction:column;align-items:center">'+(tab==='people'?'<button class="link" type="button" data-act="add-person">+ Shaxs qo‘shish</button>':'')+'</div><div class="credit">by Rakhmanov Abdulaziz</div>';
+}
+function debtHTML(d){
+  var r=rem(d), pd=d.amount-r, pc=Math.min(100,Math.round(pd/d.amount*100));
+  var pays=db.pays.filter(function(p){return p.debtId===d.id}).sort(function(a,b){return a.date.localeCompare(b.date)||a.t-b.t});
+  return '<article class="debt"><div class="dtop"><span class="pill '+(d.dir==='iowe'?'r':'g')+'">'+(d.dir==='iowe'?'MEN QARZDORMAN':'MENGA QARZDOR')+'</span>'+
+    '<span class="pill '+(r>0?'m':'g')+'">'+(r>0?'FAOL':'YOPILGAN')+'</span><span class="date">'+fmtD(d.date)+'</span></div>'+
+    '<div class="dnums"><div><div class="lbl">Asl summa</div><b class="num">'+fmt(d.amount)+'</b></div><div><div class="lbl">Qoldiq</div><b class="num '+(r>0?(d.dir==='iowe'?'neg':'pos'):'zero')+'">'+fmt(r)+'</b></div></div>'+
+    '<div class="prog" role="img" aria-label="To‘langan: '+pc+'%"><i style="width:'+pc+'%"></i></div>'+
+    (d.note?'<div class="dnote">'+esc(d.note)+'</div>':'')+
+    (pays.length?'<ul class="pays">'+pays.map(function(p){
+      return '<li><span>'+fmtD(p.date)+'</span><span class="pa num">'+fmt(p.amount)+'</span><span class="pn">'+esc(p.note||'To‘lov')+'</span>'+
+        '<span class="pb"><button class="link" type="button" data-act="edit-pay" data-id="'+esc(p.id)+'">Tahrir</button><button class="link" type="button" data-act="del-pay" data-id="'+esc(p.id)+'">O‘chirish</button></span></li>';
+    }).join('')+'</ul>':'')+
+    '<div class="dact">'+(r>0?'<button class="btn sm pri" type="button" data-act="pay" data-id="'+esc(d.id)+'">To‘lov qo‘shish</button><button class="btn sm" type="button" data-act="settle" data-id="'+esc(d.id)+'">Yopildi deb belgilash</button>':'')+
+    '<button class="btn sm" type="button" data-act="edit-debt" data-id="'+esc(d.id)+'">Tahrirlash</button><button class="btn sm warn" type="button" data-act="del-debt" data-id="'+esc(d.id)+'">O‘chirish</button></div></article>';
+}
+function personHTML(p){
+  var s=stats(p.id);
+  var ds=db.debts.filter(function(d){
+    if(d.pid!==p.id)return false;
+    var r=rem(d); if(pf==='active')return r>0; if(pf==='settled')return r===0; return true;
+  }).sort(function(a,b){return b.date.localeCompare(a.date)||b.t-a.t});
+  return '<button class="back" type="button" data-act="back">← Orqaga</button>'+
+    '<div class="ph"><h1>'+esc(p.name)+'</h1>'+(p.note?'<p class="hint">'+esc(p.note)+'</p>':'')+'</div>'+
+    '<div class="pbtns"><button class="btn sm" type="button" data-act="edit-person">Tahrirlash</button><button class="btn sm" type="button" data-act="share-person">Ulashish</button><button class="btn sm warn" type="button" data-act="del-person">O‘chirish</button></div>'+
+    '<section class="net"><div class="lbl">Joriy balans</div><div class="big num '+cls(s.net)+'" data-n="'+s.net+'" data-s="1">'+sgn(s.net)+'</div>'+
+    '<div class="hint">'+(s.net>0?'Bu shaxs sizga qarzdor':s.net<0?'Siz bu shaxsga qarzdorsiz':(s.n?'Hisob teng':'Hali qarz yo‘q'))+'</div></section>'+
+    '<div class="tiles"><div class="tile"><div class="lbl">Men qarzdorman</div><b class="num neg" data-n="'+s.io+'">'+fmt(s.io)+'</b></div><div class="tile"><div class="lbl">Menga qarzdor</div><b class="num pos" data-n="'+s.to+'">'+fmt(s.to)+'</b></div></div>'+
+    '<div class="sec"><h2>Qarzlar va to‘lovlar tarixi</h2></div><div class="chips" style="margin-bottom:12px">'+chips(pf,'pf')+'</div>'+
+    (ds.length?ds.map(debtHTML).join(''):'<div class="empty">'+(s.n?'Bu filtr bo‘yicha qarz yo‘q.':'Hali qarz yo‘q.')+'</div>');
+}
+var animT;
+function animateNums(){
+  if(typeof requestAnimationFrame!=='function'||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches))return;
+  document.querySelectorAll('[data-n]').forEach(function(el){
+    var n=Number(el.dataset.n),sg=el.dataset.s==='1',t0=null;
+    var show=function(v){el.textContent=sg?sgn(v):fmt(v)};
+    var f=function(ts){if(t0===null)t0=ts;var k=Math.min(1,(ts-t0)/800);show(k<1?Math.round(n*(1-Math.pow(1-k,3))):n);if(k<1)requestAnimationFrame(f)};
+    show(0);requestAnimationFrame(f);
+  });
+}
+function render(keepScroll){
+  var y=window.scrollY, app=$('#app'), p=view.name==='person'?person(view.id):null;
+  if(view.name==='person'&&!p){view={name:'home'}}
+  app.innerHTML=p?personHTML(p):homeHTML();
+  window.scrollTo(0,keepScroll?y:0);
+  if(!keepScroll){
+    app.classList.remove('anim');void app.offsetWidth;app.classList.add('anim');
+    animateNums();clearTimeout(animT);animT=setTimeout(function(){app.classList.remove('anim')},1500);
+  }
+}
+function refresh(){render(true)}
+
+/* ---------- sheets & confirmation ---------- */
+function closeAsk(){if(askEl){askEl.remove();askEl=null}}
+function closeSheet(){closeAsk();if(sheetEl){sheetEl.remove();sheetEl=null}}
+function openSheet(title,html,mount){
+  closeSheet();
+  var ov=document.createElement('div');ov.className='ov';
+  ov.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="sh"><h2>'+esc(title)+'</h2><button class="x" type="button" data-close aria-label="Yopish">✕</button></div>'+html+'</div>';
+  ov.addEventListener('click',function(e){if(e.target===ov||e.target.closest('[data-close]'))closeSheet()});
+  document.body.appendChild(ov);sheetEl=ov;if(mount)mount(ov);
+}
+function ask(title,text,okLabel,fn,danger){
+  closeAsk();
+  var ov=document.createElement('div');ov.className='ov top2';
+  ov.innerHTML='<div class="sheet" role="alertdialog" aria-modal="true" aria-label="'+esc(title)+'"><h2 style="font-size:18px;font-weight:700;margin-bottom:6px">'+esc(title)+'</h2><p>'+esc(text)+'</p>'+
+    '<div class="two"><button class="btn" type="button" data-no>Bekor qilish</button><button class="btn '+(danger?'dng':'pri')+'" type="button" data-yes>'+esc(okLabel)+'</button></div></div>';
+  ov.addEventListener('click',function(e){
+    if(e.target===ov||e.target.closest('[data-no]'))closeAsk();
+    else if(e.target.closest('[data-yes]')){closeAsk();fn()}
+  });
+  document.body.appendChild(ov);askEl=ov;
+}
+function setErr(ov,id,msg){
+  var e=$('#e-'+id,ov),i=$('#'+id,ov);
+  if(e)e.textContent=msg||'';
+  if(i){if(msg)i.setAttribute('aria-invalid','true');else i.removeAttribute('aria-invalid')}
+  return !msg;
+}
+function parseAmt(s){
+  var d=String(s).replace(/[\s ]/g,'');
+  if(!d)return{e:'Summani kiriting'};
+  if(!/^\d+$/.test(d))return{e:'Faqat raqam kiriting'};
+  var n=Number(d);
+  if(n<1)return{e:'Summa 0 dan katta bo‘lishi kerak'};
+  if(n>MAX)return{e:'Summa juda katta'};
+  return{n:n};
+}
+function nameErr(name,exceptId){
+  if(!name)return 'Ismni kiriting';
+  var low=name.toLowerCase();
+  return db.people.some(function(p){return p.id!==exceptId&&p.name.toLowerCase()===low})?'Bu ism ro‘yxatda bor':'';
+}
+
+/* ---------- forms ---------- */
+function personForm(p){
+  openSheet(p?'Shaxsni tahrirlash':'Yangi shaxs',
+    '<form id="f" novalidate><div class="f"><label for="pn">Ism</label><input id="pn" maxlength="60" autocomplete="off" value="'+esc(p?p.name:'')+'"><div class="err" id="e-pn"></div></div>'+
+    '<div class="f"><label for="pt">Izoh (ixtiyoriy)</label><input id="pt" maxlength="140" autocomplete="off" value="'+esc(p?p.note:'')+'"></div>'+
+    '<button class="btn pri block" type="submit">Saqlash</button></form>',
+  function(ov){
+    $('#f',ov).onsubmit=function(e){
+      e.preventDefault();
+      var name=$('#pn',ov).value.trim(), note=$('#pt',ov).value.trim();
+      if(!setErr(ov,'pn',nameErr(name,p&&p.id)))return;
+      var apply=function(){
+        if(p){p.name=name;p.note=note}else{db.people.push({id:uid(),name:name,note:note,sample:false})}
+        save();closeSheet();refresh();toast(p?'Saqlandi':'Shaxs qo‘shildi');
+      };
+      if(p)ask('O‘zgarishlarni saqlaysizmi?','Shaxs ma‘lumotlari yangilanadi.','Saqlash',apply);else apply();
+    };
+  });
+}
+function debtForm(d,preset){
+  var fixed=d?person(d.pid):(preset?person(preset):null);
+  var dir=d?d.dir:'iowe';
+  var dl=db.people.map(function(p){return '<option value="'+esc(p.name)+'"></option>'}).join('');
+  openSheet(d?'Qarzni tahrirlash':'Qarz qo‘shish',
+    '<form id="f" novalidate>'+
+    (fixed?'<p style="margin:-6px 0 14px;font-weight:700;color:var(--fg)">'+esc(fixed.name)+'</p>'
+      :'<div class="f"><label for="dn">Kim bilan?</label><input id="dn" list="pl" maxlength="60" autocomplete="off" placeholder="Ismni yozing yoki tanlang"><datalist id="pl">'+dl+'</datalist><div class="err" id="e-dn"></div></div>')+
+    '<div class="f"><span class="lbl">Yo‘nalish</span><div class="seg" role="radiogroup" aria-label="Yo‘nalish">'+
+    '<input type="radio" name="dir" id="r1" value="iowe"'+(dir==='iowe'?' checked':'')+'><label for="r1">Men qarzdorman</label>'+
+    '<input type="radio" name="dir" id="r2" value="theyowe"'+(dir==='theyowe'?' checked':'')+'><label for="r2">U menga qarzdor</label></div></div>'+
+    '<div class="f"><label for="da">Summa (so‘m)</label><input id="da" data-money inputmode="numeric" autocomplete="off" placeholder="Masalan: 500 000" value="'+(d?grp(d.amount).replace(/\u00A0/g,' '):'')+'"><div class="err" id="e-da"></div></div>'+
+    '<div class="f"><label for="dd">Sana</label><input id="dd" type="date" value="'+(d?d.date:today())+'"><div class="err" id="e-dd"></div></div>'+
+    '<div class="f"><label for="dt">Izoh (ixtiyoriy)</label><input id="dt" maxlength="140" autocomplete="off" value="'+esc(d?d.note:'')+'"></div>'+
+    '<button class="btn pri block" type="submit">'+(d?'Saqlash':'Qarzni qo‘shish')+'</button></form>',
+  function(ov){
+    $('#f',ov).onsubmit=function(e){
+      e.preventDefault();
+      var ok=true, pid=fixed?fixed.id:null, newName='';
+      if(!fixed){
+        var nm=$('#dn',ov).value.trim();
+        ok=setErr(ov,'dn',nm?'':'Ismni kiriting')&&ok;
+        if(nm){
+          var ex=db.people.filter(function(p){return p.name.toLowerCase()===nm.toLowerCase()})[0];
+          if(ex)pid=ex.id;else newName=nm;
+        }
+      }
+      var a=parseAmt($('#da',ov).value), msg=a.e||'';
+      if(!msg&&d&&a.n<paid(d))msg='Summa to‘langan '+fmtT(paid(d))+' dan kam bo‘lmasin';
+      ok=setErr(ov,'da',msg)&&ok;
+      var date=$('#dd',ov).value;
+      ok=setErr(ov,'dd',validDate(date)?'':'Sanani tanlang')&&ok;
+      if(!ok)return;
+      var dirV=$('input[name=dir]:checked',ov).value, note=$('#dt',ov).value.trim();
+      var apply=function(){
+        if(!pid){pid=uid();db.people.push({id:pid,name:newName,note:'',sample:false})}
+        var data={pid:pid,dir:dirV,amount:a.n,date:date,note:note};
+        if(d)Object.assign(d,data);else db.debts.push(Object.assign({id:uid(),t:Date.now(),sample:false},data));
+        save();closeSheet();refresh();toast(d?'Qarz yangilandi':'Qarz qo‘shildi');
+      };
+      if(d)ask('O‘zgarishlarni saqlaysizmi?','Qarz ma‘lumotlari va balanslar qayta hisoblanadi.','Saqlash',apply);else apply();
+    };
+  });
+}
+function payForm(d,pay){
+  var max=rem(d)+(pay?pay.amount:0);
+  openSheet(pay?'To‘lovni tahrirlash':'To‘lov qo‘shish',
+    '<form id="f" novalidate><p style="margin-bottom:14px">Qarz: <b class="num" style="color:var(--fg)">'+fmt(d.amount)+'</b> · Mumkin bo‘lgan eng ko‘p to‘lov: <b class="num" style="color:var(--fg)">'+fmt(max)+'</b></p>'+
+    '<div class="f"><label for="pa">To‘lov summasi (so‘m)</label><input id="pa" data-money inputmode="numeric" autocomplete="off" placeholder="Masalan: 200 000" value="'+(pay?grp(pay.amount).replace(/ /g,' '):'')+'"><div class="err" id="e-pa"></div>'+
+    '<button class="btn sm quick" type="button" id="full">To‘liq summa</button></div>'+
+    '<div class="f"><label for="pd">Sana</label><input id="pd" type="date" value="'+(pay?pay.date:today())+'"><div class="err" id="e-pd"></div></div>'+
+    '<div class="f"><label for="pt">Izoh (ixtiyoriy)</label><input id="pt" maxlength="140" autocomplete="off" value="'+esc(pay?pay.note:'')+'"></div>'+
+    '<button class="btn pri block" type="submit">Saqlash</button></form>',
+  function(ov){
+    $('#full',ov).onclick=function(){$('#pa',ov).value=grp(max).replace(/ /g,' ')};
+    $('#f',ov).onsubmit=function(e){
+      e.preventDefault();
+      var a=parseAmt($('#pa',ov).value), msg=a.e||'';
+      if(!msg&&a.n>max)msg='To‘lov qoldiqdan ('+fmtT(max)+') oshmasligi kerak';
+      var ok=setErr(ov,'pa',msg);
+      var date=$('#pd',ov).value;
+      ok=setErr(ov,'pd',validDate(date)?'':'Sanani tanlang')&&ok;
+      if(!ok)return;
+      var note=$('#pt',ov).value.trim();
+      var apply=function(){
+        if(pay){pay.amount=a.n;pay.date=date;pay.note=note;pay.auto=false}
+        else db.pays.push({id:uid(),debtId:d.id,amount:a.n,date:date,note:note,auto:false,t:Date.now(),sample:false});
+        save();closeSheet();refresh();toast(rem(d)===0?'Qarz to‘liq yopildi':(pay?'To‘lov yangilandi':'To‘lov qo‘shildi'));
+      };
+      if(pay)ask('O‘zgarishlarni saqlaysizmi?','To‘lov yangilanadi va qoldiq qayta hisoblanadi.','Saqlash',apply);else apply();
+    };
+  });
+}
+
+/* ---------- summary / share ---------- */
+function debtLine(d){
+  var r=rem(d);
+  return '  • '+fmtD(d.date)+' · '+(d.dir==='iowe'?'Men qarzdorman':'Menga qarzdor')+' · '+fmtT(d.amount)+(r>0?', qoldiq '+fmtT(r):' (yopilgan)')+(d.note?' · '+d.note:'');
+}
+function summaryAll(){
+  var t=totals(), L=['QARZ — qarz hisoboti','Sana: '+fmtD(today()),'','Men qarzdorman: '+fmtT(t.io),'Menga qarzdor: '+fmtT(t.to),'Sof balans: '+sgnT(t.net)];
+  var act=db.people.map(function(p){return{p:p,s:stats(p.id)}}).filter(function(x){return x.s.act>0});
+  if(act.length)L.push('');
+  act.forEach(function(x){
+    L.push(x.p.name+': '+(x.s.net>0?'menga qarzdor '+fmtT(x.s.net):x.s.net<0?'men qarzdorman '+fmtT(-x.s.net):'qarzlar teng'));
+    db.debts.filter(function(d){return d.pid===x.p.id&&rem(d)>0}).forEach(function(d){L.push(debtLine(d))});
+  });
+  if(!act.length)L.push('','Faol qarzlar yo‘q.');
+  return L.join('\n');
+}
+function summaryPerson(p){
+  var s=stats(p.id), L=['QARZ — '+p.name,'Sana: '+fmtD(today()),'','Men qarzdorman: '+fmtT(s.io),'Menga qarzdor: '+fmtT(s.to),'Sof balans: '+sgnT(s.net)];
+  var ds=db.debts.filter(function(d){return d.pid===p.id}).sort(function(a,b){return b.date.localeCompare(a.date)});
+  if(ds.length)L.push('','Qarzlar:');
+  ds.forEach(function(d){
+    L.push(debtLine(d));
+    db.pays.filter(function(x){return x.debtId===d.id}).sort(function(a,b){return a.date.localeCompare(b.date)}).forEach(function(x){
+      L.push('      – to‘lov '+fmtD(x.date)+': '+fmtT(x.amount)+(x.note?' ('+x.note+')':''));
+    });
+  });
+  return L.join('\n');
+}
+function copyText(text,ta){
+  var fallback=function(){
+    try{ta.focus();ta.select();toast(document.execCommand('copy')?'Nusxa olindi':'Matnni belgilab nusxa oling')}
+    catch(e){toast('Matnni belgilab nusxa oling')}
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){toast('Nusxa olindi')},fallback);
+  }else fallback();
+}
+function shareSheet(title,text){
+  openSheet(title,'<div class="f"><textarea id="st" readonly aria-label="Hisobot matni">'+esc(text)+'</textarea></div>'+
+    '<div class="btnrow"><button class="btn pri" type="button" id="sh">Ulashish</button><button class="btn" type="button" id="cp">Nusxa olish</button></div>',
+  function(ov){
+    var ta=$('#st',ov);
+    $('#cp',ov).onclick=function(){copyText(text,ta)};
+    $('#sh',ov).onclick=function(){
+      if(navigator.share){
+        navigator.share({title:'QARZ',text:text}).catch(function(err){
+          if(err&&err.name==='AbortError')return;
+          copyText(text,ta);
+        });
+      }else copyText(text,ta);
+    };
+  });
+}
+
+/* ---------- backup ---------- */
+function backupSheet(){
+  var json=JSON.stringify({app:'QarzImBor',version:1,exported:new Date().toISOString(),people:db.people,debts:db.debts,pays:db.pays},null,2);
+  openSheet('Zaxira nusxa',
+    '<div class="f"><span class="lbl">Eksport (JSON)</span><textarea id="ex" readonly aria-label="Zaxira JSON">'+esc(json)+'</textarea></div>'+
+    '<div class="btnrow"><button class="btn pri" type="button" id="cpx">Nusxa olish</button></div><p class="hint" style="margin-top:8px">Nusxani Eslatmalar yoki Telegram “Saqlangan xabarlar”ga joylang yoki .json fayl qilib saqlang.</p>'+
+    '<div class="hr"></div>'+
+    '<div class="f"><span class="lbl">Import (tiklash)</span><label for="fi" style="font-weight:600">JSON faylni tanlang</label><input id="fi" type="file" accept=".json,application/json"></div>'+
+    '<div class="f"><label for="imp">yoki JSON matnini shu yerga qo‘ying</label><textarea id="imp" placeholder="{ &quot;people&quot;: [...], &quot;debts&quot;: [...] }"></textarea><div class="err" id="e-imp"></div></div>'+
+    '<button class="btn block" type="button" id="rs">Tiklash</button>',
+  function(ov){
+    $('#cpx',ov).onclick=function(){copyText(json,$('#ex',ov))};
+    $('#fi',ov).onchange=function(){
+      var f=this.files&&this.files[0];if(!f)return;
+      var r=new FileReader();
+      r.onload=function(){$('#imp',ov).value=String(r.result);setErr(ov,'imp','');toast('Fayl o‘qildi. “Tiklash” ni bosing.')};
+      r.onerror=function(){setErr(ov,'imp','Faylni o‘qib bo‘lmadi')};
+      r.readAsText(f);
+    };
+    $('#rs',ov).onclick=function(){
+      var data;
+      try{data=clean(JSON.parse($('#imp',ov).value))}catch(e){setErr(ov,'imp','JSON noto‘g‘ri. QARZ zaxirasini qo‘ying.');return}
+      setErr(ov,'imp','');
+      ask('Ma‘lumotlarni almashtirasizmi?','Hozirgi barcha ma‘lumotlar o‘chib, zaxiradagi '+data.people.length+' ta shaxs, '+data.debts.length+' ta qarz va '+data.pays.length+' ta to‘lov yoziladi.','Almashtirish',function(){
+        db=data;save();view={name:'home'};closeSheet();render();toast('Zaxira tiklandi');
+      },true);
+    };
+  });
+}
+
+/* ---------- actions ---------- */
+var A={
+  open:function(b){view={name:'person',id:b.dataset.id};pf='all';render()},
+  back:function(){view={name:'home'};render()},
+  hf:function(b){hf=b.dataset.v;refresh()},
+  tab:function(b){tab=b.dataset.v;refresh()},
+  sp:function(b){sp=b.dataset.v;refresh()},
+  pf:function(b){pf=b.dataset.v;refresh()},
+  'add-person':function(){personForm(null)},
+  'add-debt':function(){debtForm(null,view.name==='person'?view.id:null)},
+  'edit-person':function(){personForm(person(view.id))},
+  'del-person':function(b){
+    var p=person(b&&b.dataset&&b.dataset.id||view.id);if(!p)return;
+    ask('Shaxsni o‘chirasizmi?',p.name+' va uning barcha qarz hamda to‘lovlari o‘chiriladi. Buni qaytarib bo‘lmaydi.','O‘chirish',function(){
+      var ids=db.debts.filter(function(d){return d.pid===p.id}).map(function(d){return d.id});
+      db.pays=db.pays.filter(function(x){return ids.indexOf(x.debtId)<0});
+      db.debts=db.debts.filter(function(d){return d.pid!==p.id});
+      db.people=db.people.filter(function(x){return x.id!==p.id});
+      save();view={name:'home'};render();toast('Shaxs o‘chirildi');
+    },true);
+  },
+  'edit-debt':function(b){var d=debtById(b.dataset.id);if(d)debtForm(d)},
+  'del-debt':function(b){
+    var d=debtById(b.dataset.id);if(!d)return;
+    ask('Qarzni o‘chirasizmi?','Bu qarz va uning barcha to‘lovlari tarixdan o‘chadi. Buni qaytarib bo‘lmaydi.','O‘chirish',function(){
+      db.pays=db.pays.filter(function(x){return x.debtId!==d.id});
+      db.debts=db.debts.filter(function(x){return x.id!==d.id});
+      save();refresh();toast('Qarz o‘chirildi');
+    },true);
+  },
+  pay:function(b){var d=debtById(b.dataset.id);if(d)payForm(d,null)},
+  'edit-pay':function(b){var p=payById(b.dataset.id);if(p)payForm(debtById(p.debtId),p)},
+  'del-pay':function(b){
+    var p=payById(b.dataset.id);if(!p)return;
+    ask('To‘lovni o‘chirasizmi?',fmtT(p.amount)+' miqdoridagi to‘lov o‘chiriladi va qarz qoldig‘i oshadi.','O‘chirish',function(){
+      db.pays=db.pays.filter(function(x){return x.id!==p.id});save();refresh();toast('To‘lov o‘chirildi');
+    },true);
+  },
+  settle:function(b){
+    var d=debtById(b.dataset.id);if(!d)return;var r=rem(d);if(!r)return;
+    ask('Qarzni yopilgan deb belgilaysizmi?','Qolgan '+fmtT(r)+' yakuniy to‘lov sifatida yoziladi. Barcha tarix saqlanadi.','Yopish',function(){
+      db.pays.push({id:uid(),debtId:d.id,amount:r,date:today(),note:'Yopildi deb belgilandi',auto:true,t:Date.now(),sample:false});
+      save();refresh();toast('Qarz yopildi');
+    });
+  },
+  'share-all':function(){shareSheet('Hisobotni ulashish',summaryAll())},
+  'share-person':function(){var p=person(view.id);if(p)shareSheet(p.name,summaryPerson(p))},
+  backup:function(){backupSheet()},
+  'clear-sample':function(){
+    ask('Namunalarni tozalaysizmi?','Faqat namuna shaxslar va ularning qarzlari o‘chiriladi. O‘zingiz kiritgan ma‘lumotlar qoladi.','Tozalash',function(){
+      var pids=db.people.filter(function(p){return p.sample}).map(function(p){return p.id});
+      var dids=db.debts.filter(function(d){return d.sample||pids.indexOf(d.pid)>=0}).map(function(d){return d.id});
+      db.pays=db.pays.filter(function(x){return !x.sample&&dids.indexOf(x.debtId)<0});
+      db.debts=db.debts.filter(function(d){return dids.indexOf(d.id)<0});
+      db.people=db.people.filter(function(p){return pids.indexOf(p.id)<0});
+      save();render();toast('Namunalar tozalandi');
+    });
+  }
+};
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-act]');if(!b)return;
+  var f=A[b.dataset.act];if(f)f(b);
+});
+document.addEventListener('input',function(e){
+  var t=e.target;
+  if(t.hasAttribute&&t.hasAttribute('data-money')){t.value=t.value.replace(/\D/g,'').slice(0,12).replace(/\B(?=(\d{3})+(?!\d))/g,' ')}
+  else if(t.id==='q'){q=t.value;var l=$('#list');if(l)l.innerHTML=peopleListHTML()}
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){if(askEl)closeAsk();else if(sheetEl)closeSheet()}
+});
+
+load();
+var introEl=$('#intro');
+function moneyBurst(x,y){
+  var box=document.createElement('div');box.className='money';document.body.appendChild(box);
+  var W=window.innerWidth,H=window.innerHeight,n=28;
+  for(var i=0;i<n;i++){
+    var el=document.createElement('div');el.className=i%3===2?'coin':'bill';
+    el.style.left=x+'px';el.style.top=y+'px';box.appendChild(el);
+    var a=Math.random()*Math.PI*2,d=Math.max(W,H)*(0.25+Math.random()*0.55);
+    var dx=Math.cos(a)*d*0.9,dy=Math.sin(a)*d-H*0.12*Math.random();
+    var r0=(Math.random()-.5)*50,r1=r0+(Math.random()-.5)*520,rm=(r0+r1)/2;
+    var T=function(px,py,r,sc){return 'translate(-50%,-50%) translate('+px+'px,'+py+'px) rotate('+r+'deg) scale('+sc+')'};
+    if(el.animate)el.animate([
+      {transform:T(0,0,r0,.4),opacity:0},
+      {transform:T(dx*.18,dy*.18,r0,.8),opacity:1,offset:.14},
+      {transform:T(dx*.65,dy*.65,rm,1),opacity:1,offset:.6},
+      {transform:T(dx,dy+H*.1,r1,.9),opacity:0}
+    ],{duration:1500+Math.random()*900,delay:Math.random()*240,easing:'cubic-bezier(.16,.8,.3,1)',fill:'both'});
+  }
+  setTimeout(function(){box.remove()},3000);
+}
+function startApp(e){
+  if(!introEl)return;
+  var el=introEl;introEl=null;
+  var pt=e&&e.detail>0;
+  el.style.setProperty('--x',(pt?e.clientX:window.innerWidth/2)+'px');
+  el.style.setProperty('--y',(pt?e.clientY:window.innerHeight/2)+'px');
+  el.classList.add('out');
+  var calm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!calm)moneyBurst(pt?e.clientX:window.innerWidth/2,pt?e.clientY:window.innerHeight/2);
+  setTimeout(function(){document.body.classList.remove('intro-on');render()},380);
+  setTimeout(function(){el.remove()},1400);
+}
+function typeIntro(){
+  var line=$('.i-line');if(!line)return;
+  var txt=line.textContent,k=0;
+  line.textContent='';
+  txt.split(' ').forEach(function(w,wi){
+    if(wi)line.appendChild(document.createTextNode(' '));
+    var ws=document.createElement('span');ws.className='w';
+    Array.from(w).forEach(function(ch){
+      var c=document.createElement('span');c.className='ch';c.textContent=ch;
+      c.style.animationDelay=(0.55+k*0.075)+'s';k++;ws.appendChild(c);
+    });
+    line.appendChild(ws);
+  });
+  introEl.style.setProperty('--hd',(0.55+k*0.075+0.5)+'s');
+}
+if(introEl){document.body.classList.add('intro-on');typeIntro();introEl.addEventListener('click',startApp)}else render();
+})();
+</script>
+
+</html>
